@@ -1,7 +1,7 @@
 # Auto Hydro — 触屏操控界面可行性评估
 
-**文档版本：** 2.4（第 1 版固件已实现；新增要求 `setpoint_c`）
-**日期：** 2026-09-17
+**文档版本：** 2.5（Parker 批注原文收入 §10.1；`parker confirmed/` 已删除）
+**日期：** 2026-09-18
 **状态：** 团队内审阅稿
 **硬件链接：** `display_device_link.txt` → Amazon.ca ASIN **B0F8NFFH29**
 
@@ -9,7 +9,7 @@
 
 ## 0. 相对 Parker 交回版本的变更 —— 先看这一节
 
-本文件只是**背景材料**，实现依据是 `INTEGRATION_GUIDE_zh.md` / `_en.md` **v1.4**，那份文件顶部也有自己的变更摘要。
+本文件只是**背景材料**，实现依据是 `INTEGRATION_GUIDE_zh.md` / `_en.md` **v1.5**。联调入口：**`docs/LATEST_UPDATE.md`**。
 
 | # | 变更 | Parker 要做什么 | 位置 |
 |---|------|-----------------|------|
@@ -560,7 +560,31 @@ water_level: 0 → 1 跳变
 3. **水分 0–4096 已由 Parker 确认为 12 位 ADC 原始计数。** 协议保持满量程（降采样会丢精度）。界面用 `raw / 4095 × 100` 显示整数百分比；工作区 **45–60% = ADC 1844–2457**，控制目标约 **55%**。探头是电容式水分传感器，约 30 s 采样一次；空气湿度是另一路电阻式探头，本版不上屏；水位是浮球开关。
 4. **三个必须提前处理的硬件约束：** UART0 与烧写口共用（影响调试流程）；可用 GPIO 几乎为零（所以传感器全归 Parker，符合分工）；无防护等级 + 电容触摸（雾培环境需外壳，告警消除需防误触）。
 5. **「古早风格」是正向选择**，不只是审美偏好 —— 4MB Flash 有限、RGB 面板刷新率有限，极简高对比的工业风既省资源又提升易用性。
-6. **下一步：** 按已冻结的 `docs/INTEGRATION_GUIDE_zh.md` **两端并行开发**。接线注意：3.3 V 直连；5 V 供电不要进 BAT 口。
+6. **下一步：** 按已冻结的 `docs/INTEGRATION_GUIDE_zh.md` **两端并行开发**。接线注意：3.3 V 直连；5 V 供电不要进 BAT 口。联调入口见 `docs/LATEST_UPDATE.md`。
+
+### 10.1 Parker 原文
+
+从他交回的批注稿抄出，拼写保持原样。已写入上文待确认表。
+
+Ans1: UART Communications level will happen at 3.3V with the BAUD rate being negotiable (does 115,200 BAUD work for you, the controller can handle 1200 to 921,600 BAUD).
+
+Ans4: The Panel will be powered using its onboard Battery connections Supplying 5V at 1A to 2A (current reduced due to the controller not using Wi-Fi capibilities)
+
+Ans5: The specific model of Crowpanel we plan to use comes with an acrylic back plate to protect the circuitry from accidental short circuits, However I too recommend creating a more robust case that fully encloses the device.
+
+Ans6: The data from the previous scan can be stored as an integer within the code on the microcontroller and sent back out ever 1Hz, but due to the moisture sensors suffering from corrosion when powered constantly, they must be powered down when not in use, and require roughly 150mS to return to a ready state after power is returned. The time between readings can be reduced, but at the cost of quicker component degredation.
+
+Ans7: Shwoing the resistive humidity output can be a useful addition, but is not required, However if Feng is in agreement and willing, we can adjust both of our codes so the Humidity set-point can be adjusted. Or just leave the display of that information out entirely, the microcontroller within the planter will attempt to automatically monitor and adjust the humidity at a constant rate.
+
+Ans8: You have it correct, the higher the reading from the moisture sensor, the more wet it is, and vice versa, the lower the reading the dryer it is. (But the sensors can be can be manually adjusted to give larger steps or chunks of the 0-4096 range)
+
+Ans9: Acknowledgements would make communications easier and less buggy during use, while also allowing for self managed debugging (Smart man for thinking of this Mr.Feng)
+
+Ans10: The measured temperature display can be done, and is also an amazing yet simple little addition (Double points for Mr.Feng)
+
+Parker 修订附注：All Priority0 dependancies have been met, Priority1 dependancies have been met(pending viewership), and Priority2 dependancies have been met but can be cancelled if workload becomes too-much.
+
+对接指南清单上的旁注：Q3 水泵回读 **Yes**；Q4 ack **Yes**；Q6 极性 *Im not 100% sure, but I can add code to make it inverted, so Yes*；Q8 湿度 *Yes/Later*。
 
 ---
 
@@ -572,5 +596,6 @@ water_level: 0 → 1 跳变
 | 2.0 | 2026-09-11 | Feng | 确认为 Elecrow CrowPanel 7" ESP32-S3（ASIN B0F8NFFH29）；补充完整硬件参数、引脚占用、UART0/USB 共用约束、电平与供电风险、电容屏误触防护、LVGL 工具链与编译配置；移除 Qt 选项 |
 | 2.1 | 2026-09-11 | Feng | Parker 确认：4096 为 ADC 原始值（可降采样但协议保持满量程）；三路传感器为电容式水分 / 电阻式空气湿度 / 浮球水位；水分约 30 s 采样，工作区 ADC 1844–2457 = 45–60%，目标 ~55%。字段 `humidity_*` 更名为 `moisture_*`；telemetry 改为 1 Hz 心跳 |
 | 2.2 | 2026-09-17 | Feng | 界面产品名改为 AUTO HYDRO（无 steamer）；状态栏去掉日期，不做校时 |
-| 2.3 | 2026-09-17 | Feng | 写入 `docs/parker confirmed/` 中的 Parker 答复：3.3 V、1 Hz、ACK、实测温度、越大越湿、Parker 供 5 V 1–2 A；空气湿度 v1 不上屏 |
+| 2.3 | 2026-09-17 | Feng | 写入 Parker 交回批注稿中的答复：3.3 V、1 Hz、ACK、实测温度、越大越湿、Parker 供 5 V 1–2 A；空气湿度 v1 不上屏 |
 | 2.4 | 2026-09-17 | Feng | 第 1 版界面固件已完成（`firmware/`，PlatformIO + LVGL 9）。telemetry 新增 **`setpoint_c`**，已在对接指南 v1.3 §15.1 向 Parker 提出 |
+| 2.5 | 2026-09-18 | Feng | Parker 原文收入 §10.1；删除 `docs/parker confirmed/`。联调入口改为 `docs/LATEST_UPDATE.md` |

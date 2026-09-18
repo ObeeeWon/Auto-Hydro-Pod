@@ -1,7 +1,7 @@
 # Auto Hydro — Touch HMI Feasibility Assessment
 
-**Document version:** 2.4 (v1 firmware implemented; `setpoint_c` requested)  
-**Date:** 2026-09-17  
+**Document version:** 2.5 (Parker’s annotated replies archived in §8.1; `parker confirmed/` removed)  
+**Date:** 2026-09-18  
 **Status:** Internal team review draft  
 **Related file:** `display_device_link.txt` → Amazon.ca ASIN **B0F8NFFH29** (Elecrow CrowPanel 7" ESP32-S3). Hardware details: Chinese doc v2.0+.
 
@@ -9,7 +9,7 @@
 
 ## 0. What changed since the copy you returned — read this first
 
-This file is **background only**. The thing to implement against is `INTEGRATION_GUIDE_en.md` **v1.4**, which has its own change summary at the top.
+This file is **background only**. The thing to implement against is `INTEGRATION_GUIDE_en.md` **v1.5**. Start of bring-up: **`docs/LATEST_UPDATE.md`**.
 
 | # | Change | Your action | Where |
 |---|--------|-------------|-------|
@@ -32,7 +32,7 @@ This file is **background only**. The thing to implement against is `INTEGRATION
 | Feature 1.1 moisture display | **Feasible**; 0–4096 = **12-bit ADC raw** (do not downscale on the wire); ~30 s sample; band 45–60% ≈ ADC **1844–2457**, target **~55%** |
 | No network required | **Aligned** with typical embedded local HMI architecture |
 
-**Recommendation:** Proceed to parallel development against `INTEGRATION_GUIDE_en.md` v1.4. Parker’s P0 replies are in. Watch panel power: 5 V from Parker into USB-C / UART0 **5 V-in**, never the Li-ion BAT pin.
+**Recommendation:** Proceed to parallel development against `INTEGRATION_GUIDE_en.md` v1.5. First joint step is the breadboard test button in `docs/LATEST_UPDATE.md`.
 
 ---
 
@@ -374,8 +374,32 @@ alarm_dismissed=false, flash again
 
 1. **The overall plan is feasible.** CrowPanel 7" ESP32-S3 + LVGL + UART JSON covers pump, temperature, and low-water alert. Qt is not viable on this panel.  
 2. **0–4096 is 12-bit ADC raw**, confirmed by Parker. Keep full scale on the wire (downsampling costs accuracy). UI shows integer percent via `raw / 4095 × 100`. Operating band **45–60% = ADC 1844–2457**, target **~55%**. Capacitive moisture is sampled ~every 30 s; resistive air humidity is a separate sensor and is off-screen in this revision; level is a float switch.  
-3. Implement against **`docs/INTEGRATION_GUIDE_en.md` v1.2** (frozen after Parker’s replies).  
+3. Implement against **`docs/INTEGRATION_GUIDE_en.md` v1.5** (frozen after Parker’s replies; bring-up one-pager: `docs/LATEST_UPDATE.md`).  
 4. Remaining hardware watch-outs: panel 5 V feed (not BAT pin, prefer 2 A), full enclosure, moisture probe duty-cycle.
+
+### 8.1 Parker’s replies, verbatim
+
+Copied from the annotated file he returned. Spelling left as written. Already folded into the open-issues table above.
+
+Ans1: UART Communications level will happen at 3.3V with the BAUD rate being negotiable (does 115,200 BAUD work for you, the controller can handle 1200 to 921,600 BAUD).
+
+Ans4: The Panel will be powered using its onboard Battery connections Supplying 5V at 1A to 2A (current reduced due to the controller not using Wi-Fi capibilities)
+
+Ans5: The specific model of Crowpanel we plan to use comes with an acrylic back plate to protect the circuitry from accidental short circuits, However I too recommend creating a more robust case that fully encloses the device.
+
+Ans6: The data from the previous scan can be stored as an integer within the code on the microcontroller and sent back out ever 1Hz, but due to the moisture sensors suffering from corrosion when powered constantly, they must be powered down when not in use, and require roughly 150mS to return to a ready state after power is returned. The time between readings can be reduced, but at the cost of quicker component degredation.
+
+Ans7: Shwoing the resistive humidity output can be a useful addition, but is not required, However if Feng is in agreement and willing, we can adjust both of our codes so the Humidity set-point can be adjusted. Or just leave the display of that information out entirely, the microcontroller within the planter will attempt to automatically monitor and adjust the humidity at a constant rate.
+
+Ans8: You have it correct, the higher the reading from the moisture sensor, the more wet it is, and vice versa, the lower the reading the dryer it is. (But the sensors can be can be manually adjusted to give larger steps or chunks of the 0-4096 range)
+
+Ans9: Acknowledgements would make communications easier and less buggy during use, while also allowing for self managed debugging (Smart man for thinking of this Mr.Feng)
+
+Ans10: The measured temperature display can be done, and is also an amazing yet simple little addition (Double points for Mr.Feng)
+
+Parker’s revision note: All Priority0 dependancies have been met, Priority1 dependancies have been met(pending viewership), and Priority2 dependancies have been met but can be cancelled if workload becomes too-much.
+
+Inline notes on the integration-guide checklist: Q3 pump-in-telemetry **Yes**; Q4 ack **Yes**; Q6 polarity *Im not 100% sure, but I can add code to make it inverted, so Yes*; Q8 humidity *Yes/Later*.
 
 ---
 
@@ -386,5 +410,6 @@ alarm_dismissed=false, flash again
 | 1.0 | 2026-09-10 | Feng | Initial draft: feasibility + protocol proposal |
 | 2.1 | 2026-09-11 | Feng | Parker confirmed: 4096 is ADC raw (keep full scale); sensors are capacitive moisture / resistive humidity / float switch; moisture ~30 s, band 1844–2457 = 45–60%, target ~55%. Renamed `humidity_*` → `moisture_*`; telemetry heartbeat ~1 Hz. Hardware model (CrowPanel) as in Chinese v2.0 |
 | 2.2 | 2026-09-17 | Feng | On-screen product name is **AUTO HYDRO** (no steamer in this system). Status bar shows link status only — **no date**, no clock-set UI (device is offline) |
-| 2.3 | 2026-09-17 | Feng | Merged Parker replies from `docs/parker confirmed/`: 3.3 V, 1 Hz, ACK, measured temp, higher ADC = wetter, Parker supplies 5 V 1–2 A; humidity off-screen in v1 |
+| 2.3 | 2026-09-17 | Feng | Merged Parker replies from the annotated copies he returned: 3.3 V, 1 Hz, ACK, measured temp, higher ADC = wetter, Parker supplies 5 V 1–2 A; humidity off-screen in v1 |
 | 2.4 | 2026-09-17 | Feng | v1 panel firmware built (`firmware/`, PlatformIO + LVGL 9). Telemetry gains **`setpoint_c`**, requested from Parker in integration guide v1.3 §15.1 |
+| 2.5 | 2026-09-18 | Feng | Parker’s verbatim answers archived in §8.1; `docs/parker confirmed/` removed. Point bring-up at `docs/LATEST_UPDATE.md` |

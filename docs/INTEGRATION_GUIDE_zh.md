@@ -1,8 +1,8 @@
 # Auto Hydro 控制板 ↔ 触屏界面 — 对接指南
 
-**文档版本：** 1.4  
+**文档版本：** 1.5  
 **日期：** 2026-09-18  
-**状态：** Parker 已回复，v1 线路约定**已冻结**（原稿：`docs/parker confirmed/`），另新增 **`setpoint_c`**（§6.2）与**联调测试按钮**（§6.4）  
+**状态：** Parker 已回复，v1 线路约定**已冻结**（原文见附录 C），另新增 **`setpoint_c`**（§6.2）与**联调测试按钮**（§6.4）。联调入口：**`docs/LATEST_UPDATE.md`**  
 **读者：** 界面侧（Feng）为主；英文版 `INTEGRATION_GUIDE_en.md` 发给 Parker  
 **配套：** 可行性评估见 `FEASIBILITY_ASSESSMENT_zh.md`（背景材料；**以本文件为接口实现依据**）
 
@@ -421,7 +421,7 @@ JSON **现在**对齐；硬件可以后到。
 
 ## 15. Parker 答复（2026-09-17 已冻结）
 
-原稿：`docs/parker confirmed/INTEGRATION_GUIDE_en.md` 与 `docs/parker confirmed/FEASIBILITY_ASSESSMENT_en 1.md`。
+Parker 原文已抄入**附录 C**（他批注过的那两份文件不再单独保留文件夹）。
 
 | # | 问题 | Parker | v1 决定 |
 |---|------|--------|---------|
@@ -524,6 +524,43 @@ JSON **现在**对齐；硬件可以后到。
 
 ---
 
+## 附录 C — Parker 原文（2026-09-11 / 2026-09-17）
+
+从他交回的批注稿抄出，拼写保持原样。这些答复已经写进 §15；独立文件夹删除后，本附录就是存档。
+
+### C.1 对接指南清单上的旁注
+
+| # | 问题 | Parker 原话 |
+|---|------|-------------|
+| 3 | v1 telemetry 是否带实际 `pump` 0/1？ | Yes |
+| 4 | v1 是否做 `ack`？ | Yes |
+| 6 | `moisture_raw` 是否已经「越大越湿」？ | Im not 100% sure, but I can add code to make it inverted, so Yes |
+| 8 | 以后要不要把空气湿度上屏？ | Yes/Later |
+
+第 1、2、5、7 题写在下面这份可行性评估的末尾，没有写在这张表上。
+
+### C.2 可行性评估末尾的逐条答复
+
+Ans1: UART Communications level will happen at 3.3V with the BAUD rate being negotiable (does 115,200 BAUD work for you, the controller can handle 1200 to 921,600 BAUD).
+
+Ans4: The Panel will be powered using its onboard Battery connections Supplying 5V at 1A to 2A (current reduced due to the controller not using Wi-Fi capibilities)
+
+Ans5: The specific model of Crowpanel we plan to use comes with an acrylic back plate to protect the circuitry from accidental short circuits, However I too recommend creating a more robust case that fully encloses the device.
+
+Ans6: The data from the previous scan can be stored as an integer within the code on the microcontroller and sent back out ever 1Hz, but due to the moisture sensors suffering from corrosion when powered constantly, they must be powered down when not in use, and require roughly 150mS to return to a ready state after power is returned. The time between readings can be reduced, but at the cost of quicker component degredation.
+
+Ans7: Shwoing the resistive humidity output can be a useful addition, but is not required, However if Feng is in agreement and willing, we can adjust both of our codes so the Humidity set-point can be adjusted. Or just leave the display of that information out entirely, the microcontroller within the planter will attempt to automatically monitor and adjust the humidity at a constant rate.
+
+Ans8: You have it correct, the higher the reading from the moisture sensor, the more wet it is, and vice versa, the lower the reading the dryer it is. (But the sensors can be can be manually adjusted to give larger steps or chunks of the 0-4096 range)
+
+Ans9: Acknowledgements would make communications easier and less buggy during use, while also allowing for self managed debugging (Smart man for thinking of this Mr.Feng)
+
+Ans10: The measured temperature display can be done, and is also an amazing yet simple little addition (Double points for Mr.Feng)
+
+Parker 在修订记录里写的 v2.2：All Priority0 dependancies have been met, Priority1 dependancies have been met(pending viewership), and Priority2 dependancies have been met but can be cancelled if workload becomes too-much.
+
+---
+
 ## 修订记录
 
 | 版本 | 日期 | 说明 |
@@ -533,3 +570,4 @@ JSON **现在**对齐；硬件可以后到。
 | 1.2 | 2026-09-17 | 写入 Parker 答复并冻结：3.3 V、115200、1 Hz 心跳、ACK 必须、`pump` + `temperature_c` 必须、越大越湿、Parker 供 5 V 1–2 A（不进 BAT）、水分探头占空比约 150 ms。空气湿度 v1 不上屏 |
 | 1.3 | 2026-09-17 | 第 1 版固件实现时发现缺口：telemetry 新增 **`setpoint_c`（必须，15–30）**，让屏重启后与 Parker 的实际设定值对齐；写明回读优先、ACK 后 1 s 宽限、未确认时屏上的琥珀色提示。新增验收项 A13/A14 |
 | 1.4 | 2026-09-18 | **联调测试按钮**（§6.4）：可选 `test_button` / `test_count`，跳变必须补帧，以按压计数作为链路无丢帧的证据。屏上显示会自动消失的 TEST 标签并逐次记日志。新增验收项 A15/A16，并列为 Parker 清单第一项 |
+| 1.5 | 2026-09-18 | Parker 批注原文抄入**附录 C**，删除 `docs/parker confirmed/`。给 Parker 的联调一页纸：**`docs/LATEST_UPDATE.md`** |

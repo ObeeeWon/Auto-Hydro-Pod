@@ -32,11 +32,13 @@ NDJSON over UART0 (panel IO43 TX / IO44 RX). Three message types: `telemetry` (~
 
 The contract — pinout, field table, ACK rules, bring-up tests — is in **[`docs/INTEGRATION_GUIDE_en.md`](docs/INTEGRATION_GUIDE_en.md)** (English, send this to Parker). Chinese copy: [`docs/INTEGRATION_GUIDE_zh.md`](docs/INTEGRATION_GUIDE_zh.md). If anything conflicts with earlier drafts, the integration guide wins.
 
+**Parker, first evening on the bench:** [`docs/LATEST_UPDATE.md`](docs/LATEST_UPDATE.md) — wire the UART, add the breadboard test button, press five times. The panel must count to 5.
+
 ## Repo layout
 
 ```
 firmware/     CrowPanel firmware (PlatformIO + LVGL 9 + LovyanGFX)
-docs/         Integration guide and feasibility notes (en / zh)
+docs/         Integration guide, feasibility notes, LATEST_UPDATE (en / zh)
 ```
 
 Logic that is not drawing (line splitting, JSON parse, link / ACK / alarm state) builds natively and is unit-tested on the host.

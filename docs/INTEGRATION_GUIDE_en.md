@@ -1,8 +1,8 @@
 # Auto Hydro Controller ↔ Touch HMI — Integration Guide
 
-**Document version:** 1.4  
+**Document version:** 1.5  
 **Date:** 2026-09-18  
-**Status:** v1 wire contract **frozen** after Parker’s replies (source: `docs/parker confirmed/`), plus **`setpoint_c`** (§6.2) and a **bring-up test button** (§6.4)  
+**Status:** v1 wire contract **frozen** after Parker’s replies (verbatim in Appendix C), plus **`setpoint_c`** (§6.2) and a **bring-up test button** (§6.4). Start of bring-up: **`docs/LATEST_UPDATE.md`**.  
 **Audience:** Parker (controller firmware) and Feng (touch HMI)  
 **Companion:** feasibility notes in `FEASIBILITY_ASSESSMENT_en.md` (background only; **this file is the interface to implement**)
 
@@ -411,7 +411,7 @@ Do these in order. Stop if a step fails.
 
 ## 15. Parker replies (frozen 2026-09-17)
 
-Source files: `docs/parker confirmed/INTEGRATION_GUIDE_en.md` and `docs/parker confirmed/FEASIBILITY_ASSESSMENT_en 1.md`.
+Parker’s original wording is copied in **Appendix C** (the annotated copies he returned are no longer kept as a separate folder).
 
 | # | Question | Parker | v1 decision |
 |---|----------|--------|-------------|
@@ -552,6 +552,43 @@ if __name__ == "__main__":
 
 ---
 
+## Appendix C — Parker’s replies, verbatim (2026-09-11 / 2026-09-17)
+
+Copied from the annotated files he returned. Spelling left as written. These answers are already folded into §15; this appendix is the archive now that the separate folder is gone.
+
+### C.1 Integration-guide checklist (his inline notes on §15)
+
+| # | Question | Parker’s note |
+|---|----------|----------------|
+| 3 | Will v1 telemetry include actual `pump` 0/1? | Yes |
+| 4 | Will v1 include `ack`? | Yes |
+| 6 | Is `moisture_raw` already “higher = wetter”? | Im not 100% sure, but I can add code to make it inverted, so Yes |
+| 8 | Air humidity on the HMI in a later revision? | Yes/Later |
+
+Questions 1, 2, 5, 7 were answered in the feasibility file below rather than on this table.
+
+### C.2 Feasibility answers (end of his annotated assessment)
+
+Ans1: UART Communications level will happen at 3.3V with the BAUD rate being negotiable (does 115,200 BAUD work for you, the controller can handle 1200 to 921,600 BAUD).
+
+Ans4: The Panel will be powered using its onboard Battery connections Supplying 5V at 1A to 2A (current reduced due to the controller not using Wi-Fi capibilities)
+
+Ans5: The specific model of Crowpanel we plan to use comes with an acrylic back plate to protect the circuitry from accidental short circuits, However I too recommend creating a more robust case that fully encloses the device.
+
+Ans6: The data from the previous scan can be stored as an integer within the code on the microcontroller and sent back out ever 1Hz, but due to the moisture sensors suffering from corrosion when powered constantly, they must be powered down when not in use, and require roughly 150mS to return to a ready state after power is returned. The time between readings can be reduced, but at the cost of quicker component degredation.
+
+Ans7: Shwoing the resistive humidity output can be a useful addition, but is not required, However if Feng is in agreement and willing, we can adjust both of our codes so the Humidity set-point can be adjusted. Or just leave the display of that information out entirely, the microcontroller within the planter will attempt to automatically monitor and adjust the humidity at a constant rate.
+
+Ans8: You have it correct, the higher the reading from the moisture sensor, the more wet it is, and vice versa, the lower the reading the dryer it is. (But the sensors can be can be manually adjusted to give larger steps or chunks of the 0-4096 range)
+
+Ans9: Acknowledgements would make communications easier and less buggy during use, while also allowing for self managed debugging (Smart man for thinking of this Mr.Feng)
+
+Ans10: The measured temperature display can be done, and is also an amazing yet simple little addition (Double points for Mr.Feng)
+
+Revision note from Parker (his v2.2): All Priority0 dependancies have been met, Priority1 dependancies have been met(pending viewership), and Priority2 dependancies have been met but can be cancelled if workload becomes too-much.
+
+---
+
 ## Revision history
 
 | Version | Date | Notes |
@@ -561,3 +598,4 @@ if __name__ == "__main__":
 | 1.2 | 2026-09-17 | Parker replies frozen: 3.3 V, 115200, 1 Hz heartbeat, ACK MUST, `pump` + `temperature_c` MUST, higher ADC = wetter, Parker supplies 5 V 1–2 A (not BAT pin), moisture probe duty-cycled (~150 ms). Humidity display deferred |
 | 1.3 | 2026-09-17 | Gap found while writing the v1 panel firmware: telemetry gains **`setpoint_c` (MUST, 15–30)** so the panel matches the controller's real setpoint after a reboot. Documents echo precedence, the 1 s post-ACK grace window, and the amber "not confirmed" note. Acceptance items A13/A14 added |
 | 1.4 | 2026-09-18 | **Bring-up test button** (§6.4): optional `test_button` / `test_count`, edge frame required, press counter as the proof of an unbroken link. Panel shows a self-removing TEST chip and logs every press. Acceptance items A15/A16; first item on Parker's checklist |
+| 1.5 | 2026-09-18 | Parker’s annotated replies copied verbatim into **Appendix C**; `docs/parker confirmed/` removed. Bring-up one-pager for Parker: **`docs/LATEST_UPDATE.md`** |
