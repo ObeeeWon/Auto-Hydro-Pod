@@ -4,6 +4,54 @@
 **Audience:** Parker and Feng  
 **Related:** [`LATEST_UPDATE.md`](LATEST_UPDATE.md) (the bring-up test itself), [`INTEGRATION_GUIDE_en.md`](INTEGRATION_GUIDE_en.md) (the wire contract)
 
+## Update — second attempt, 18 Sep afternoon: check which board you flashed
+
+**Reported:** compile OK, upload OK, screen still black — but **many more LEDs on the breadboard are now lit**, where before only two were.
+
+**Leading hypothesis: the firmware went onto the Freenove controller, not the CrowPanel.**
+
+The breadboard is wired to the Freenove. Flashing the panel has no reason to change anything the breadboard does, so two LEDs becoming many means **the newly flashed firmware is driving the Freenove's GPIOs.** And driving GPIOs is exactly what panel firmware does: it uses 15, 7, 6, 5, 4, 9, 46, 3, 8, 16, 1, 14, 21, 47, 48 and 45 as a 16-bit RGB data bus, plus 41 (DE), 40 (VSYNC), 39 (HSYNC) and 0 (PCLK), clocked at 15 MHz. That covers most of the low GPIO range and almost certainly overlaps the pins your LEDs are on. Those LEDs are being lit by pixel data.
+
+**Quick confirmation:** are they dim, flickering, or unevenly bright? That is a video signal, not normal logic levels. Steady, sensible-looking LEDs would point elsewhere.
+
+**Why nothing errored:** both boards are ESP32-S3. esptool only refuses when the chip *family* does not match, so uploading an ESP32-S3 image to the wrong ESP32-S3 succeeds completely silently.
+
+### Two things to handle before powering up again
+
+1. **Your controller firmware has probably been overwritten.** If the upload landed on the Freenove, your code is gone and needs re-flashing. Please check before assuming the board is fine.
+2. **Disconnect the pump and heater loads first.** Twenty GPIOs driven as a video bus toggle at high speed. If any of them feeds a relay or a power stage, real loads get switched at random.
+
+### The decisive check: MAC address
+
+esptool prints two lines on every upload:
+
+```
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+MAC: 68:b6:b3:xx:xx:xx
+```
+
+**That MAC uniquely identifies the board.** Please send us the full log from the upload that succeeded. Then connect *only* the Freenove and read its MAC the same way. If the two match, the panel never received anything.
+
+### Hardened flashing procedure
+
+The failure mode is port selection, so remove the choice entirely:
+
+1. **Unplug the Freenove's USB cable completely** — not "pick the other port in the menu", physically unplug it.
+2. Plug USB-C into the **CrowPanel only**.
+3. Run `pio device list` and confirm **exactly one** port exists. Note its name.
+4. Upload naming that port explicitly, so nothing is guessed:
+   ```bash
+   pio run -e panel-mock -t upload --upload-port /dev/cu.usbmodemXXXX
+   ```
+5. Expect the screen described in §4 step 4.
+
+### Two wiring questions from the photo
+
+- **I cannot see a USB-C cable in the CrowPanel.** How is the panel powered right now? If the four jumpers from the Freenove (yellow / white / black / red) only carry TX, RX and GND, the panel has no 5 V at all. Please confirm its red power LED is lit.
+- **The ribbon cable with the white HY2.0-4P connector is lying on the bench, unconnected.** That is the panel's UART0 cable. Please confirm which path you are actually using for the link, that one or the four jumpers.
+
+---
+
 ## 0. Summary
 
 Two separate problems, and it matters that they are separate.
@@ -21,15 +69,18 @@ And one disclosure we owe Parker: **our display driver has never run on real har
 
 Note that the two lit LEDs on the Freenove only mean the controller's own firmware is running. The 4-wire UART0 link between the boards is a **data cable carrying JSON text**, not a display bus. The CrowPanel has **its own ESP32-S3** (the metal-shielded module) and the panel UI runs on that chip, so the controller cannot put anything on the LCD no matter what it sends.
 
-## 2. Do this first: which of three failures is it?
+## 2. Do this first: which of four failures is it?
 
-"Power LED on, screen black" is consistent with all three of these, and we cannot tell which from the photos:
+"Power LED on, screen black" is consistent with all four of these, and we cannot tell which from the photos:
 
 | # | Cause | Likelihood |
 |---|-------|-----------|
 | A | No panel firmware on the chip at all — nothing was flashed, or the upload failed | high |
 | B | `Mayhaps` was flashed and crashes in `ui::init()` before anything is drawn | high |
 | C | Correct firmware is running, but the RGB timing or backlight config is wrong | real — see §5 |
+| D | The upload went to the **Freenove** instead of the CrowPanel — both are ESP32-S3, so it succeeds silently | **leading, after the second attempt** — see the update at the top |
+
+Case D is invisible to the test below, because it is the *panel* you are measuring while the firmware is somewhere else. Settle D first with the MAC-address check in the update section, then use this measurement.
 
 **The measurement.** Unplug the 4-pin UART0 cable from the CrowPanel, connect USB-C to the CrowPanel only, and open the USB serial monitor at 115200.
 
@@ -58,7 +109,7 @@ There is also a build-config problem that explains a lot. The real `platformio.i
 Use [`AutoHydroPanel/`](../AutoHydroPanel). It is the complete firmware — display driver, UART, protocol, and the test button all present — in a single flat folder that builds under **either** PlatformIO or the Arduino IDE. Build instructions are in [`AutoHydroPanel/README.md`](../AutoHydroPanel/README.md).
 
 1. **Unplug the 4-pin UART0 cable from the CrowPanel.** UART0 is shared with the USB-C programming port on this board; flashing with Parker's cable attached fails and can disturb boot.
-2. **Plug USB-C into the CrowPanel only,** not the Freenove. Two ESP32 boards means two serial ports, and picking the wrong one flashes the wrong chip.
+2. **Physically unplug the Freenove's USB cable, and plug USB-C into the CrowPanel only.** Both boards are ESP32-S3, so flashing the wrong one succeeds with no error at all — this is what we think went wrong on the second attempt. Confirm with `pio device list` that only one port exists, and name it explicitly with `--upload-port`.
 3. **Flash the mock build first:** `pio run -e panel-mock -t upload`. It generates its own telemetry, so the panel proves its screen, touch and test indicator with no controller attached.
 4. **Expect:** `AUTO HYDRO` in the top bar, `NO LINK` briefly, then values moving — moisture sweeping the 45 / 55 / 60 % band, and a `TEST` chip flashing at roughly 12 s, 25 s, 26 s and 45 s. Once you see this, the screen is proven and every later problem is a link problem.
 5. **Then** reconnect UART0 (TX↔RX crossed, common GND) and flash the live build: `pio run -e panel -t upload`.

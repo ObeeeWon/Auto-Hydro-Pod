@@ -26,7 +26,14 @@ pio run -e panel -t upload        # step 5 below
 ```
 
 1. **Unplug the 4-pin UART0 cable from the CrowPanel.** UART0 is shared with the USB-C programming port, so flashing fails while the controller cable is attached.
-2. **Plug USB-C into the CrowPanel only,** not the Freenove. Two boards means two serial ports, and the wrong one flashes the wrong chip.
+2. **Physically unplug the Freenove's USB cable,** then plug USB-C into the CrowPanel only. **Both boards are ESP32-S3, so flashing the wrong one succeeds with no error whatsoever** — it also overwrites the controller firmware. Confirm with `pio device list` that exactly one port is present, then name it explicitly:
+
+   ```bash
+   pio device list
+   pio run -e panel-mock -t upload --upload-port /dev/cu.usbmodemXXXX
+   ```
+
+   Every upload prints `MAC: xx:xx:xx:xx:xx:xx`. That value identifies the board — keep a note of the panel's MAC and you can always tell afterwards which chip you programmed.
 3. **Flash `panel-mock` first.** It generates its own telemetry, so the panel proves its screen, touch and test indicator with no controller attached.
 4. **You should see:** `AUTO HYDRO` in the top bar, `NO LINK` briefly, then values moving — moisture sweeping the 45 / 55 / 60 % band, and a `TEST` chip flashing at roughly 12 s, 25 s, 26 s and 45 s. Touch the pump switch and the temperature slider to confirm the GT911 works. **Once this works the screen is proven, and every later problem is a link problem.**
 5. **Then wire UART0** (TX↔RX crossed, common GND) and flash `panel`. Now Parker's JSON has somewhere to land — continue with [`../docs/LATEST_UPDATE.md`](../docs/LATEST_UPDATE.md).
