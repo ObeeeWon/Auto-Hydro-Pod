@@ -5,3 +5,6 @@
 *.swp
 firmware.zip
 __MACOSX/
+
+# Incomplete Arduino IDE port kept only for local reference — see docs/PANEL_FLASHING_en.md
+Mayhaps/

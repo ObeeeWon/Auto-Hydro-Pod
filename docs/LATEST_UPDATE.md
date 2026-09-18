@@ -6,6 +6,8 @@
 
 This is the shortest path to a proven cable: **press a button on your breadboard → your MCU → UART → the panel lights up.** No soil probe, no pump, no heater. Until this works, we are debugging one wire, not the whole system.
 
+> **Prerequisite — do this first.** The CrowPanel has its own ESP32-S3 and must be flashed over its own USB-C before any step below means anything; your controller cannot drive the LCD. Flash [`AutoHydroPanel/`](../AutoHydroPanel), **not** the `Mayhaps` sketch — that one has the test-button handling deleted, so §5 below could never pass with it. If the screen is black with only the power LED on, start at [`PANEL_FLASHING_en.md`](PANEL_FLASHING_en.md) §2.
+
 中文版在本文后半。
 
 ---
@@ -102,6 +104,8 @@ If anything here conflicts with a longer doc, **`INTEGRATION_GUIDE_en.md` wins**
 **完整约定：** [`INTEGRATION_GUIDE_en.md`](INTEGRATION_GUIDE_en.md) v1.5（本页不能替代那份文件）
 
 最短路径： **在面包板上按一下按钮 → 你的 MCU → UART → 屏亮。** 不需要土壤探头、水泵、加热。这一步没通之前，我们只在查一根线，而不是整套系统。
+
+> **前置条件 —— 先做这一步。** CrowPanel 自带一颗 ESP32-S3，必须先通过它自己的 USB-C 烧写固件，下面所有步骤才有意义；控制器驱动不了这块 LCD。要烧的是 [`AutoHydroPanel/`](../AutoHydroPanel)，**不是** `Mayhaps` —— 后者把测试按钮的处理删掉了，用它下面第 5 节永远通不过。如果只有电源灯亮、屏幕全黑，从 [`PANEL_FLASHING_zh.md`](PANEL_FLASHING_zh.md) §2 开始。
 
 ## 1. 两板接线
 

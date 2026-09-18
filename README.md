@@ -34,11 +34,16 @@ The contract — pinout, field table, ACK rules, bring-up tests — is in **[`do
 
 **Parker, first evening on the bench:** [`docs/LATEST_UPDATE.md`](docs/LATEST_UPDATE.md) — wire the UART, add the breadboard test button, press five times. The panel must count to 5.
 
+**Screen black on the first attempt?** [`docs/PANEL_FLASHING_en.md`](docs/PANEL_FLASHING_en.md) — one measurement that tells the three possible causes apart, and an honest note that the display driver has never run on hardware. Chinese copy: [`docs/PANEL_FLASHING_zh.md`](docs/PANEL_FLASHING_zh.md).
+
+**Flashing the panel:** use [`AutoHydroPanel/`](AutoHydroPanel) — the complete firmware in one flat folder that builds under both PlatformIO and the Arduino IDE. Do not use the `Mayhaps` sketch; it has the display driver and the whole test-button feature deleted.
+
 ## Repo layout
 
 ```
-firmware/     CrowPanel firmware (PlatformIO + LVGL 9 + LovyanGFX)
-docs/         Integration guide, feasibility notes, LATEST_UPDATE (en / zh)
+AutoHydroPanel/  Flash this. Complete firmware, flat folder, PlatformIO or Arduino IDE
+firmware/        Same sources as src/ + include/, and the host unit tests
+docs/            Integration guide, feasibility notes, LATEST_UPDATE, panel flashing (en / zh)
 ```
 
 Logic that is not drawing (line splitting, JSON parse, link / ACK / alarm state) builds natively and is unit-tested on the host.
